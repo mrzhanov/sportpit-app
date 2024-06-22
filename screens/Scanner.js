@@ -7,10 +7,12 @@ import { CameraView } from 'expo-camera';
 import { deleteObject, getDownloadURL, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import * as ImageManipulator from 'expo-image-manipulator';
 import defaultImage, { playSound } from '../constants/constants';
+import MyImagePickerComponent from '../components/MyImagePickerComponent';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Scanner() {
+  
   const [todos, setTodos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const cameraRef = useRef(null);
@@ -279,7 +281,7 @@ fetchTodos()
   />
 
       <Button title="Открыть камеру" disabled={!isLoading} onPress={restartScanner} />
-  
+    
       <FlatList
         style={{ marginTop: 15 }}
         data={todos.filter(product => product.deleted == false)}
@@ -354,7 +356,7 @@ fetchTodos()
         keyboardType='numeric'
 
               value={editedTodo.priceWhole}
-              onChangeText={(text) => setEditedTodo(prev => ({ ...prev, priceWhole: text }))}
+              onChangeText={(text) => setEditedTodo(prev => ({ ...prev, priceWhole: text ? parseFloat(text) : 0 }))}
             />
             <TextInput
               style={styles.input}
@@ -389,6 +391,9 @@ fetchTodos()
       </Modal>
               <View style={{paddingBottom:10}}>
             <Button title="Снять фото" onPress={takePhoto} />
+              <MyImagePickerComponent
+              setEditedTodo={setEditedTodo}
+      />
               </View>
             <Button title="Сохранить" onPress={saveEditedTodo}  disabled={!isFormValid} />
           </View>
