@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Image, View, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-const MyImagePickerComponent = ({setEditedTodo}) => {
+const MyImagePickerComponent = ({setEditedTodo,uploadPhoto}) => {
 
   const pickImage = async () => {
     // Запрос разрешений на доступ к камере и библиотеке изображений
@@ -21,7 +21,8 @@ const MyImagePickerComponent = ({setEditedTodo}) => {
     });
 
     if (!result.canceled) {
-      setEditedTodo((prev) => ({...prev,imageurl:result.assets[0].uri}))
+        uploadPhoto(result.assets[0].uri)
+      // setEditedTodo((prev) => ({...prev,imageurl:result.assets[0].uri}))
     }
   };
 
@@ -41,25 +42,30 @@ const MyImagePickerComponent = ({setEditedTodo}) => {
     });
 
     if (!result.canceled) {
-        setEditedTodo((prev) => ({...prev,imageurl:result.assets[0].uri}))
+        
+        uploadPhoto(result.assets[0].uri)
+        // setEditedTodo((prev) => ({...prev,imageurl:result.assets[0].uri}))
     }
   };
 
   return (
     <View style={styles.container}>
-      <Button title="Pick an image from gallery" onPress={pickImage} />
-      <Button title="Take a photo" onPress={takePhoto} />
+      <Button title="Выбрать из галереи" onPress={pickImage} />
+      <Button title="снять на камеру " onPress={takePhoto} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    gap:2,
+    marginTop:5,
   },
   image: {
     width: 200,
     height: 200,
     marginTop: 20,
+    borderRadius:10
   },
 });
 

@@ -6,6 +6,7 @@ import { CameraView } from 'expo-camera';
 import { getDownloadURL, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { ScrollView } from 'react-native-gesture-handler';
+import MyImagePickerComponent from '../components/MyImagePickerComponent';
 const { width, height } = Dimensions.get('window');
 export default function AddProduct() {
 
@@ -183,6 +184,9 @@ setProgress(progress)
       />
       <View style={{width:'100%'}}>
       <Button title="Добавить фото" onPress={takePhoto} /> 
+      <MyImagePickerComponent 
+      uploadPhoto={uploadPhoto}
+      />
       <Button title="Добавить товар" onPress={handleAddProduct} disabled={!isFormValid} />
 {imageurl && <Image style={{width:200,height:200}} src={imageurl}/>}
       </View>

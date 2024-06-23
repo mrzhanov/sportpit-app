@@ -8,7 +8,7 @@ import { deleteObject, getDownloadURL, uploadBytes, uploadBytesResumable } from 
 import * as ImageManipulator from 'expo-image-manipulator';
 import defaultImage, { playSound } from '../constants/constants';
 import MyImagePickerComponent from '../components/MyImagePickerComponent';
-
+import {parse} from 'date-fns'
 const { width, height } = Dimensions.get('window');
 
 export default function Scanner() {
@@ -17,6 +17,7 @@ export default function Scanner() {
   const [isLoading, setIsLoading] = useState(true);
   const cameraRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
   
   const [cameraVisible, setCameraVisible] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -42,17 +43,21 @@ export default function Scanner() {
     setIsLoading(true);
   }, [todos]);
 
+
+
+;
   const refreshData = async () => {
     setRefreshing(true);
+    checkForExpiredDeletes()
     await fetchTodos(); // Перезагрузка данных
     setRefreshing(false);
   };
 
-  const isFormValid = photo && photo 
 
   const fetchTodos = async () => {
     const todosCollection = await getDocs(collection(db, 'products'));
     const todosData = todosCollection.docs.map(doc => ({ id: doc.id, docId: doc.id, ...doc.data() }));
+    
     setTodos(todosData);
   };
 
@@ -86,11 +91,12 @@ export default function Scanner() {
         date: new Date(),
         deleted: false,
         deletedAt: null,
-        
+        docId:''
       };
       
       const docRef = await addDoc(collection(db, 'products'), newTodo);
       setEditedTodo({ ...newTodo, docId: docRef.id });
+      // setTodos({...newTodo,docId:docRef.id})
       fetchTodos()
     playSound()
       
@@ -107,8 +113,9 @@ export default function Scanner() {
       setimage(photo.uri)
     }
   };
-
+X``
   const uploadPhoto = async (uri) => {
+  setPhoto(true)
     const manipulatedImage = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 800 } }], // You can adjust the width as needed
@@ -197,7 +204,8 @@ uploadTask.on('state_changed',
   const openEditModal = (todo) => {
     setEditedTodo(todo);
     setEditModalVisible(true);
-    if (todo.price && todo.name && todo.priceWhole && todo.imageurl && todo.desc) {
+      
+    if (todo.imageurl || todo.name) {
       setPhoto(true)
     }else if(editedTodo.price && editedTodo.name && editedTodo.priceWhole && editedTodo.imageurl && editedTodo.desc)
       setPhoto(true)
@@ -206,7 +214,7 @@ uploadTask.on('state_changed',
   const saveEditedTodo = async () => {
 
     const updatedTodos = todos.map(todo => (todo.id === editedTodo.id ? editedTodo : todo));
-  
+    
     setTodos(updatedTodos);
     setEditModalVisible(false);
 
@@ -219,14 +227,21 @@ uploadTask.on('state_changed',
 
   const deleteTodo = async (id) => {
     const todoRef = doc(db, 'products', id);
-    await updateDoc(todoRef, { deleted: true, deletedAt: new Date() });
+    await updateDoc(todoRef, { deleted: true, deletedAt: new Date().toISOString() });
     fetchTodos();
   };
+  
+  const filteredTodos = todos.filter(todo => 
+    todo.name.toLowerCase().includes(search.toLowerCase()) ||
+    todo.id.toLowerCase().includes(search.toLowerCase())
+);
 
  const deleteFull = async (id,imageurl) => {
-  const storageRef = ref(storage, imageurl);
+  if (imageurl) {
+    const storageRef = ref(storage, imageurl);
     await deleteObject(storageRef);
     console.log('Photo deleted successfully');
+  }
   const todoRef = doc(db, 'products', id);
 await deleteDoc(todoRef).then(()=>Alert.alert('Успешно удален'))
 fetchTodos()
@@ -239,11 +254,12 @@ fetchTodos()
   };
 
   const checkForExpiredDeletes = async () => {
-    const now = new Date();
-    const expiredTodos = todos.filter(todo => todo.deleted && (now - new Date(todo.deletedAt)) > 3 * 30 * 24 * 60 * 60 * 1000);
+    const now = new Date()
+    const expiredTodos = todos.filter(todo => todo.deleted && (now - new Date(todo.deletedAt)) > 3 * 30 * 24 *60 * 60 * 1000);
     for (let todo of expiredTodos) {
       const todoRef = doc(db, 'products', todo.docId);
       await deleteDoc(todoRef)
+      Alert.alert('из корзины удален по истечении 30 дней')
     }
   };
 
@@ -265,11 +281,14 @@ fetchTodos()
   return (
     <View style={styles.container}>
       <View style={{marginBottom:10}}>
-      {isLoading && (
-      <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
-      </View>
-    )}
+      <TextInput 
+    style={styles.searchInput}
+    placeholder="Поиск..."
+    value={search}
+    onChangeText={setSearch}
+/>
+
+     
         <Button title="Открыть корзину" onPress={openTrashModal} />
       </View>
   <TrashModal
@@ -284,7 +303,7 @@ fetchTodos()
     
       <FlatList
         style={{ marginTop: 15 }}
-        data={todos.filter(product => product.deleted == false)}
+        data={filteredTodos.filter(product => product.deleted == false)}
         renderItem={({ item }) => (
           
           <TouchableOpacity key={item.id} onPress={() => openEditModal(item)} style={styles.todoItem}>
@@ -348,7 +367,10 @@ fetchTodos()
               value={editedTodo.price}
         keyboardType='numeric'
 
-              onChangeText={(text) => setEditedTodo(prev => ({ ...prev, price: text }))}
+              onChangeText={(text) => {
+                const formattedPrice = text.replace(/,/g, '.');
+                setEditedTodo(prev => ({ ...prev, price: formattedPrice }));
+            }}
             />
             <TextInput
               style={styles.input}
@@ -356,7 +378,10 @@ fetchTodos()
         keyboardType='numeric'
 
               value={editedTodo.priceWhole}
-              onChangeText={(text) => setEditedTodo(prev => ({ ...prev, priceWhole: text ? parseFloat(text) : 0 }))}
+              onChangeText={(text) => {
+                const formattedPrice = text.replace(/,/g, '.');
+                setEditedTodo(prev => ({ ...prev, priceWhole: formattedPrice  }))
+              }}
             />
             <TextInput
               style={styles.input}
@@ -392,10 +417,11 @@ fetchTodos()
               <View style={{paddingBottom:10}}>
             <Button title="Снять фото" onPress={takePhoto} />
               <MyImagePickerComponent
+              uploadPhoto={uploadPhoto}
               setEditedTodo={setEditedTodo}
       />
               </View>
-            <Button title="Сохранить" onPress={saveEditedTodo}  disabled={!isFormValid} />
+            <Button title="Сохранить" onPress={saveEditedTodo}  disabled={!photo} />
           </View>
         </View>
       </Modal>
@@ -406,13 +432,26 @@ fetchTodos()
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 40,
+    paddingTop: 20,
     paddingHorizontal: 20,
   },
   productDate:{
     color:'gray',
   }
-  ,
+  , searchInput: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    paddingLeft: 8,
+    marginBottom: 10,
+     shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+},
   loadingContainer: {
     position: 'absolute',
     top: 0,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, FlatList, StyleSheet, Text, View } from 'react-native';
 
 export default function Modall({ cart, modalVisibleView, setModalVisibleView }) {
   return (
@@ -12,14 +12,20 @@ export default function Modall({ cart, modalVisibleView, setModalVisibleView }) 
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <ScrollView>
-              <Image source={{ uri: cart.imageurl }} style={{ width: '100%', height: 500, borderRadius: 10, paddingTop: 10 }} />
-              <Text style={styles.productName}>{'Название: ' + cart.name}</Text>
-              <Text style={styles.productPrice}>{"Цена в шт: " + cart.price}</Text>
-              <Text style={styles.productPrice}>{'Цена оптом: ' + cart.priceWhole}</Text>
-              <Text style={styles.productDate}>{`${new Date(cart?.date?.seconds * 1000).toLocaleString()}`}</Text>
-              <Text style={styles.productName}>{'Описание: ' + cart.desc}</Text>
-            </ScrollView>
+            <FlatList
+              data={[cart]} // Оборачиваем cart в массив, чтобы FlatList мог его обработать
+              keyExtractor={(item) => item.id} // Замените на ваш уникальный ключ, если он есть
+              renderItem={({ item }) => (
+                <>
+                  <Image source={{ uri: item.imageurl }} style={styles.image} />
+                  <Text style={styles.productName}>{'Название: ' + item.name}</Text>
+                  <Text style={styles.productPrice}>{"Цена в шт: " + item.price}</Text>
+                  <Text style={styles.productPrice}>{'Цена оптом: ' + item.priceWhole}</Text>
+                  <Text style={styles.productDate}>{`${new Date(item?.date?.seconds * 1000).toLocaleString()}`}</Text>
+                  <Text style={styles.productName}>{'Описание: ' + item.desc}</Text>
+                </>
+              )}
+            />
           </View>
         </View>
       </Modal>
@@ -121,8 +127,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   image: {
-    width: 200,
-    height: 200,
+    width: '100%',
+    height: 500,
+    borderRadius: 10,
     marginBottom: 10,
     resizeMode: 'cover',
   },

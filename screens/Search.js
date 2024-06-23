@@ -139,7 +139,7 @@ export default function Search() {
         <Text style={styles.buttonText}>Открыть счет</Text>
       </TouchableOpacity>  
       <FlatList
-        style={{ marginTop: 15 }}
+        style={{ marginTop: 0 }}
         data={todos}
         renderItem={({ item }) => (
           <ProductItem item={item} setModalVisibleView={setModalVisibleView} setCart={setCart} addToTrash={addToTrash} />
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     height: height * 0.06,
     borderWidth: 1,
     borderColor: 'black',
-    marginBottom: height * 0.02,
+    marginBottom: height * 0.01,
     paddingHorizontal: width * 0.02,
   },
   scanButton: {
@@ -198,14 +198,14 @@ const styles = StyleSheet.create({
     borderRadius:9,
     padding: height * 0.02,
     alignItems: 'center',
-    marginBottom: height * 0.02,
+    marginBottom: height * 0.01,
   },
   trashInput: {
     backgroundColor: 'blue',
     padding: height * 0.02,
     borderRadius:9,
     alignItems: 'center',
-    marginBottom: height * 0.01,
+    marginBottom:height * 0.01,
   },
   buttonText: {
     color: 'white',

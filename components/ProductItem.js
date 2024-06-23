@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   todoItem: {
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    paddingVertical: height * 0.02,
+    paddingVertical: height * 0.01,
   },
   image: {
     width: "100%",
@@ -46,10 +46,11 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     color: 'gray',
-    marginBottom: 5,
+    marginBottom: 2,
   },
   productDate: {
     color: 'gray',
+    marginBottom:5,
   },
 });
 
