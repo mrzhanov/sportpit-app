@@ -41,7 +41,7 @@ const TrashModal = ({
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modal}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+       <ScrollView>
             <FlatList
               style={{ marginTop: 15 }}
               data={trash}
@@ -76,7 +76,8 @@ const TrashModal = ({
               )}
               keyExtractor={(item) => item.id.toString()}
             />
-          </ScrollView>
+       </ScrollView>
+
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>{`Общая цена в штук: ${totalPrice} Сом`}</Text>
             <Text style={styles.totalText}>{`Общая цена в оптом: ${totalPriceWhole} Сом`}</Text>

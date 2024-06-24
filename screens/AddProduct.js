@@ -1,14 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, Button, Modal, StyleSheet, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, getDocs } from 'firebase/firestore';
 import { db, storage,ref } from '../services/firebase.service';
 import { CameraView } from 'expo-camera';
 import { getDownloadURL, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { ScrollView } from 'react-native-gesture-handler';
 import MyImagePickerComponent from '../components/MyImagePickerComponent';
+import SelectionPicker from '../components/SelectionPicker';
 const { width, height } = Dimensions.get('window');
-export default function AddProduct() {
+export default function AddProduct({data}) {
 
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -20,7 +21,9 @@ export default function AddProduct() {
   const [photoUrl, setPhotoUrl] = useState(null);
   const cameraRef = useRef(null);
   const [progressImage,setProgress] = useState()
+  const [editedTodo,setEditedTodo] = useState('')
   const [image, setImage] = useState(null);
+
 
   const pickImage = async () => {
     // No permissions request is necessary for launching the image library
@@ -45,7 +48,7 @@ export default function AddProduct() {
       alert('Пожалуйста, заполните все поля и добавьте фотографию');
       return;
     }
-    const product = {id:new Date().toISOString(),imageurl, name,deleted:false,deletedAt:null, price, priceWhole, desc,date:new Date(), photoUrl };
+    const product = {id:new Date().toISOString(),imageurl, name,deleted:false,deletedAt:null, price, priceWhole, desc,date:new Date(), photoUrl,category:editedTodo };
     const docRef = collection(db, 'products');
     await addDoc(docRef, product);
     setName('')
@@ -54,6 +57,7 @@ export default function AddProduct() {
     setPriceWhole('');
     setDesc('');
     setPhotoUrl(null);
+    setEditedTodo('')
   };
 
   const isFormValid = name && price && priceWhole && desc && imageurl ;
@@ -182,10 +186,15 @@ setProgress(progress)
         onChangeText={setDesc}
         multiline={true}
       />
+      <SelectionPicker
+      data={data}
+      setEditedTodo={setEditedTodo} 
+      />
       <View style={{width:'100%'}}>
       <Button title="Добавить фото" onPress={takePhoto} /> 
       <MyImagePickerComponent 
       uploadPhoto={uploadPhoto}
+      
       />
       <Button title="Добавить товар" onPress={handleAddProduct} disabled={!isFormValid} />
 {imageurl && <Image style={{width:200,height:200}} src={imageurl}/>}

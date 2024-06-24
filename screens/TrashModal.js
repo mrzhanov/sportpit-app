@@ -19,7 +19,7 @@ export default function TrashModal({ visible, todos,closeTrashModal,deleteFull, 
                 <Text>{`название: ${item.name} Цена ${item.price}`}</Text>
               <View style={styles.trashButton}>
                 <Button title="Восстановить" onPress={() => restoreTodo(item.docId)} />
-               <Button title="удалить навсегда" onPress={() => deleteFull(item.docId,item.imageurl)} />
+               <Button title="удалить навсегда" onPress={() => deleteFull(item.id,item.imageurl)} />
               </View>
               </View>
             )}

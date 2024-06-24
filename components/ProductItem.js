@@ -1,17 +1,19 @@
 import React from 'react';
 import { View, Text, Image, Button, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
-
+import defaultImage from '../assets/sky-sports-logo-black-and-white.png'
 const { width, height } = Dimensions.get('window');
 
 const ProductItem = ({ item,setCart ,addToTrash,setModalVisibleView }) => {
+        
   return (
     <TouchableOpacity onLongPress={() => {
       setCart(item);
       setModalVisibleView(true);
     }} style={styles.todoItem}>
-      <Image source={{ uri: item.imageurl }} style={styles.image} />
+      <Image source={{ uri: item.imageurl ? item.imageurl : 'https://firebasestorage.googleapis.com/v0/b/sportpit-47d69.appspot.com/o/sky-sports-logo-black-and-white.png?alt=media&token=d57fa436-97f9-455f-9aa0-452e226588b2'}} style={styles.image} />
       <Text style={styles.productName}>{`Название: ${item.name}`}</Text>
       <Text style={styles.productPrice}>{`Цена: ${item.price}`}</Text>
+      <Text style={styles.productPrice}>{`Категория: ${item.category}`}</Text>
       <Text style={styles.productDate}>
         {`${new Date(item?.date?.seconds * 1000).toLocaleDateString('en-US', {
           year: 'numeric',

@@ -21,6 +21,7 @@ export default function Modall({ cart, modalVisibleView, setModalVisibleView }) 
                   <Text style={styles.productName}>{'Название: ' + item.name}</Text>
                   <Text style={styles.productPrice}>{"Цена в шт: " + item.price}</Text>
                   <Text style={styles.productPrice}>{'Цена оптом: ' + item.priceWhole}</Text>
+                  <Text style={styles.productPrice}>{'Категория: ' + item.category}</Text>
                   <Text style={styles.productDate}>{`${new Date(item?.date?.seconds * 1000).toLocaleString()}`}</Text>
                   <Text style={styles.productName}>{'Описание: ' + item.desc}</Text>
                 </>

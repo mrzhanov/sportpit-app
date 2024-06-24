@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Button, FlatList, StyleSheet, Image, Modal, Pressable, TouchableOpacity, Alert, RefreshControl, Dimensions } from 'react-native';
-import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import TrashModal from './TrashModal';
 import { db, storage,ref } from '../services/firebase.service';
 import { CameraView } from 'expo-camera';
@@ -8,17 +8,18 @@ import { deleteObject, getDownloadURL, uploadBytes, uploadBytesResumable } from 
 import * as ImageManipulator from 'expo-image-manipulator';
 import defaultImage, { playSound } from '../constants/constants';
 import MyImagePickerComponent from '../components/MyImagePickerComponent';
-import {parse} from 'date-fns'
+import RNPickerSelect from 'react-native-picker-select';
+
 const { width, height } = Dimensions.get('window');
 
-export default function Scanner() {
+export default function Scanner({data}) {
   
   const [todos, setTodos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const cameraRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  
+  const [selected,setselected] = useState('')
   const [cameraVisible, setCameraVisible] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -36,6 +37,9 @@ export default function Scanner() {
   };
   useEffect(() => {
     fetchTodos();
+
+
+    
   }, []);
 
   useEffect(() => {
@@ -47,6 +51,7 @@ export default function Scanner() {
 
 ;
   const refreshData = async () => {
+ 
     setRefreshing(true);
     checkForExpiredDeletes()
     await fetchTodos(); // Перезагрузка данных
@@ -56,8 +61,7 @@ export default function Scanner() {
 
   const fetchTodos = async () => {
     const todosCollection = await getDocs(collection(db, 'products'));
-    const todosData = todosCollection.docs.map(doc => ({ id: doc.id, docId: doc.id, ...doc.data() }));
-    
+    const todosData = todosCollection.docs.map(doc => ({ id: doc.id, docId: doc.docId, ...doc.data() }));     
     setTodos(todosData);
   };
 
@@ -91,12 +95,14 @@ export default function Scanner() {
         date: new Date(),
         deleted: false,
         deletedAt: null,
-        docId:''
+        docId:'',
+          category: ''
       };
       
-      const docRef = await addDoc(collection(db, 'products'), newTodo);
-      setEditedTodo({ ...newTodo, docId: docRef.id });
-      // setTodos({...newTodo,docId:docRef.id})
+      
+      // Получаем ID нового документа
+      await addDoc(collection(db, 'products'), newTodo);
+
       fetchTodos()
     playSound()
       
@@ -113,7 +119,7 @@ export default function Scanner() {
       setimage(photo.uri)
     }
   };
-X``
+
   const uploadPhoto = async (uri) => {
   setPhoto(true)
     const manipulatedImage = await ImageManipulator.manipulateAsync(
@@ -201,7 +207,8 @@ uploadTask.on('state_changed',
     setScannedData('');
   };
 
-  const openEditModal = (todo) => {
+  const openEditModal =async (todo) => {
+    
     setEditedTodo(todo);
     setEditModalVisible(true);
       
@@ -211,51 +218,113 @@ uploadTask.on('state_changed',
       setPhoto(true)
     };
 
-  const saveEditedTodo = async () => {
-
-    const updatedTodos = todos.map(todo => (todo.id === editedTodo.id ? editedTodo : todo));
-    
-    setTodos(updatedTodos);
-    setEditModalVisible(false);
-
-    const todoRef = doc(db, 'products', editedTodo.docId);
-    
-    await updateDoc(todoRef, editedTodo);
-    fetchTodos();
-
-  };
+    const saveEditedTodo = async () => {
+      try {
+        const updatedTodos = todos.map(todo => (todo.id === editedTodo.id ? editedTodo : todo));
+        
+        setTodos(updatedTodos);
+        setEditModalVisible(false);
+        
+        // Поиск документа по id
+        const q = query(collection(db, 'products'), where('id', '==', editedTodo.id));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const docSnapshot = querySnapshot.docs[0];
+          console.log(docSnapshot.id);
+          const todoRef = doc(db, 'products', docSnapshot.id);
+          await updateDoc(todoRef, {...editedTodo,docId:docSnapshot.id});
+          fetchTodos();
+        } else {
+          throw new Error('Document not found');
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
 
   const deleteTodo = async (id) => {
-    const todoRef = doc(db, 'products', id);
-    await updateDoc(todoRef, { deleted: true, deletedAt: new Date().toISOString() });
-    fetchTodos();
-  };
+    const q = query(collection(db, 'products'), where('id', '==', id));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const docSnapshot = querySnapshot.docs[0];
+      const todoRef = doc(db, 'products', docSnapshot.id);
+      console.log(todoRef);
+      await updateDoc(todoRef, { deleted: true, deletedAt: new Date().toISOString() });
+
+      fetchTodos();
+    } else {
+      throw new Error('Document not found');
+    }
+  }
   
   const filteredTodos = todos.filter(todo => 
     todo.name.toLowerCase().includes(search.toLowerCase()) ||
     todo.id.toLowerCase().includes(search.toLowerCase())
 );
 
- const deleteFull = async (id,imageurl) => {
-  if (imageurl) {
-    const storageRef = ref(storage, imageurl);
-    await deleteObject(storageRef);
-    console.log('Photo deleted successfully');
-  }
-  const todoRef = doc(db, 'products', id);
-await deleteDoc(todoRef).then(()=>Alert.alert('Успешно удален'))
-fetchTodos()
- }
+const deleteFull = async (id, imageurl) => {
+  try {
+    // Удаление фото из хранилища, если imageurl предоставлен
+    if (imageurl) {
+      const storageRef = ref(storage, imageurl);
+      await deleteObject(storageRef);
+      console.log('Photo deleted successfully');
+    }
 
-  const restoreTodo = async (id) => {
-    const todoRef = doc(db, 'products', id);
-    await updateDoc(todoRef, { deleted: false, deletedAt: null });
-    fetchTodos();
-  };
+    // Поиск документа по id
+    const q = query(collection(db, 'products'), where('id', '==', id));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const docSnapshot = querySnapshot.docs[0];
+      const todoRef = doc(db, 'products', docSnapshot.id);
+      
+      // Удаление документа
+      await deleteDoc(todoRef);
+      Alert.alert('Успешно удален');
+      fetchTodos();
+    } else {
+      throw new Error('Document not found');
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const restoreTodo = async (id) => {
+  const todoRef = doc(db, 'products', id);
+  await updateDoc(todoRef, { deleted: false, deletedAt: null });
+  fetchTodos();
+  // try {
+  //   // Создаем запрос с условием для поиска документа по id
+  //   const q = query(collection(db, 'products'), where('docId', '==', id));
+  //   const querySnapshot = await getDocs(q);
+
+  //   // Проверяем, есть ли документ с данным id
+  //   if (!querySnapshot.empty) {
+  //     // Получаем ссылку на найденный документ
+  //     const docSnapshot = querySnapshot.docs[0];
+  //     const todoRef = doc(db, 'products', docSnapshot.id);
+
+  //     // Обновляем документ, устанавливая deleted на false и deletedAt на null
+  //     await updateDoc(todoRef, { deleted: false, deletedAt: null });
+
+  //     // После успешного обновления, вызываем функцию для обновления списка задач
+  //     await fetchTodos(); // Предполагается, что fetchTodos возвращает Promise
+  //   } else {
+  //     console.log('Документ с таким id не найден');
+  //   }
+  // } catch (error) {
+  //   console.error('Ошибка при восстановлении задачи:', error);
+  // }
+};
+
 
   const checkForExpiredDeletes = async () => {
     const now = new Date()
-    const expiredTodos = todos.filter(todo => todo.deleted && (now - new Date(todo.deletedAt)) > 3 * 30 * 24 *60 * 60 * 1000);
+    const expiredTodos = todos.filter(todo => todo.deleted && (now - new Date(todo.deletedAt)) > 4 * 30 * 24 *60 * 60 * 1000);
     for (let todo of expiredTodos) {
       const todoRef = doc(db, 'products', todo.docId);
       await deleteDoc(todoRef)
@@ -264,16 +333,17 @@ fetchTodos()
   };
 
   const renderDeleteButtons = (item) => {
+    
     if (item.deleted) {
       return (
         <>
-          <Button title="Восстановить" onPress={() => restoreTodo(item.id)} />
+          <Button title="Восстановить" onPress={() => restoreTodo(item)} />
 
         </>
       );
     } else {
       return (
-        <Button title="Удалить" onPress={() => deleteTodo(item.docId)} />
+        <Button title="Удалить" onPress={() => deleteTodo(item.id)} />
       );
     }
   };
@@ -313,6 +383,8 @@ fetchTodos()
         />
 
             <Text style={{fontSize:20,fontWeight:'bold',marginTop:10,}}>{`${item.name}`}</Text>
+      <Text style={styles.productDate}>{`Категория: ${item.category}`}</Text>
+
             <Text style={styles.productDate}>{`${new Date(item.date.seconds * 1000).toLocaleString()}`}</Text>
 
             {renderDeleteButtons(item)}
@@ -391,7 +463,13 @@ fetchTodos()
                 setEditedTodo(prev => ({ ...prev, desc: text }))}}
             />
             
-      
+            <RNPickerSelect
+        onValueChange={(value) => setEditedTodo(prev =>({...prev,category:value}))}
+        items={data}
+        value={editedTodo?.category}
+        placeholder={{ label: "Select a category", value: null }}
+        style={pickerSelectStyles.inputAndroid}
+      />
       <View style={{width:'100%'}}>
 {editedTodo?.imageurl && <Image style={{width:'100%',height:300}} src={editedTodo.imageurl}/>}
       </View>
@@ -555,5 +633,32 @@ width:'100%'
     height: 200,
     marginBottom: 10,
     resizeMode: 'cover',
+  }
+
+  
+});
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+    color: 'black',
+    paddingRight: 30,
+    marginVertical: 10,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'gray',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
+    marginVertical: 10,
   },
 });
+

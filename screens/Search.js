@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, FlatList,Text, TextInput, TouchableOpacity, View, Dimensions, RefreshControl, StyleSheet } from 'react-native';
+import { Alert, Button, FlatList,Text, TextInput, TouchableOpacity, View, Dimensions, RefreshControl, StyleSheet, ScrollView } from 'react-native';
 import { db } from '../services/firebase.service';
 import { collection, getDocs } from 'firebase/firestore';
 import { playSound, playSoundError } from '../constants/constants';
@@ -153,7 +153,7 @@ export default function Search() {
           />
         }
       />
-    
+      
       <TrashModal
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
@@ -165,7 +165,7 @@ export default function Search() {
         totalPrice={totalPrice}
         totalPriceWhole={totalPriceWhole}
         deleteFull={deleteFull}
-      />
+        />
       <BarcodeScanner
         scanning={scanning}
         setScanning={setScanning}
